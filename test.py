@@ -1,8 +1,6 @@
-import pandas
-import numpy
-import sklearn
-import streamlit
-import matplotlib
-import seaborn
+import pandas as pd
 
-print("Everything Installed Successfully!")
+df = pd.read_csv("flight_delay_project_dataset.csv", nrows=50000)
+
+print(df.head())
+print(df.shape)
