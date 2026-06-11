@@ -1,0 +1,135 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * AeroPredict design system — deep navy & champagne gold luxury aviation.
+ * All colors in oklch. Display font: Marcellus. Body font: Jost.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-navy-deep: var(--navy-deep);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-display: "Marcellus", serif;
+  --font-sans: "Jost", sans-serif;
+}
+
+:root {
+  --radius: 0.25rem;
+
+  /* Deep navy base */
+  --background: oklch(0.18 0.035 262);
+  --foreground: oklch(0.93 0.01 260);
+
+  --card: oklch(0.215 0.04 262);
+  --card-foreground: oklch(0.93 0.01 260);
+
+  --popover: oklch(0.215 0.04 262);
+  --popover-foreground: oklch(0.93 0.01 260);
+
+  /* Champagne gold */
+  --primary: oklch(0.79 0.105 85);
+  --primary-foreground: oklch(0.16 0.035 262);
+
+  --secondary: oklch(0.26 0.045 262);
+  --secondary-foreground: oklch(0.93 0.01 260);
+
+  --muted: oklch(0.25 0.04 262);
+  --muted-foreground: oklch(0.64 0.02 260);
+
+  --accent: oklch(0.26 0.045 262);
+  --accent-foreground: oklch(0.87 0.08 88);
+
+  --destructive: oklch(0.6 0.21 25);
+  --destructive-foreground: oklch(0.97 0.005 260);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.79 0.105 85);
+
+  --gold: oklch(0.79 0.105 85);
+  --gold-light: oklch(0.88 0.08 90);
+  --navy-deep: oklch(0.14 0.03 262);
+  --success: oklch(0.72 0.15 155);
+  --warning: oklch(0.75 0.15 70);
+
+  /* Gradients & effects */
+  --gradient-hero: linear-gradient(
+    180deg,
+    oklch(0.14 0.03 262 / 55%) 0%,
+    oklch(0.16 0.035 262 / 75%) 60%,
+    oklch(0.18 0.035 262) 100%
+  );
+  --gradient-gold: linear-gradient(135deg, oklch(0.79 0.105 85), oklch(0.88 0.08 90));
+  --shadow-gold: 0 8px 32px -8px oklch(0.79 0.105 85 / 35%);
+  --shadow-card: 0 12px 40px -12px oklch(0.1 0.02 262 / 60%);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+}
+
+@utility hero-overlay {
+  background: var(--gradient-hero);
+}
+
+@utility text-gradient-gold {
+  background: var(--gradient-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility shadow-gold {
+  box-shadow: var(--shadow-gold);
+}
+
+@utility shadow-card-deep {
+  box-shadow: var(--shadow-card);
+}
+
+@utility tracking-luxe {
+  letter-spacing: 0.25em;
+}
