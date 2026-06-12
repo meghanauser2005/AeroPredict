@@ -20,7 +20,7 @@ export const Route = createFileRoute("/predict")({
       {
         name: "description",
         content:
-          "Enter your flight month, day, airline, departure time, distance and weather delay to get an instant delay prediction.",
+          "Enter your flight month, day, airline, departure time, distance and airport to get an instant delay prediction.",
       },
       { property: "og:title", content: "Predict Your Flight Delay — AeroPredict" },
       {
@@ -52,6 +52,17 @@ const AIRLINES = [
   { code: "G4", name: "Allegiant Air" },
 ];
 
+const AIRPORTS = [
+  "JFK",
+  "LAX",
+  "ORD",
+  "ATL",
+  "DFW",
+  "SFO",
+  "SEA",
+  "MIA"
+];
+
 const formSchema = z.object({
   month: z.string().nonempty("Select a month"),
   dayOfWeek: z.string().nonempty("Select a day of week"),
@@ -61,14 +72,20 @@ const formSchema = z.object({
     .string()
     .nonempty("Enter the flight distance")
     .refine((v) => Number(v) > 0 && Number(v) <= 12000, "Distance must be between 1 and 12,000 miles"),
-  weatherDelay: z
-    .string()
-    .nonempty("Enter the weather delay (0 if none)")
-    .refine((v) => Number(v) >= 0 && Number(v) <= 1440, "Weather delay must be 0–1440 minutes"),
+  airport: z.string().nonempty("Select an airport")
 });
 
 type FormValues = z.infer<typeof formSchema>;
 type FormErrors = Partial<Record<keyof FormValues, string>>;
+
+interface Prediction {
+  minutes: number;
+  label: string;
+  tone: "success" | "warning" | "destructive";
+  airport: string;
+  weatherCondition: string;
+  weatherDelay: number;
+}
 
 const toneClasses: Record<Prediction["tone"], string> = {
   success: "text-success border-success/40",
@@ -83,7 +100,7 @@ function PredictPage() {
     airline: "",
     departureTime: "",
     distance: "",
-    weatherDelay: "",
+    airport: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [prediction, setPrediction] = useState<Prediction | null>(null);
@@ -131,16 +148,22 @@ function PredictPage() {
             Airline: values.airline,
             CRSDepTime: Number(values.departureTime.split(":")[0]),
             Distance: Number(values.distance),
-            WeatherDelay: Number(values.weatherDelay),
+            Airport: values.airport,
           }),
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(errorData);
+        alert("Backend returned an error");
+        return;
+      }
+
       const data = await response.json();
 
       let label = "";
-      let tone: "success" | "warning" | "destructive" =
-        "success";
+      let tone: "success" | "warning" | "destructive" = "success";
 
       if (data.prediction === 0) {
         label = "Green (On Time)";
@@ -157,6 +180,9 @@ function PredictPage() {
         minutes: data.delay_minutes,
         label,
         tone,
+        airport: data.airport,
+        weatherCondition: data.weather_condition,
+        weatherDelay: data.weather_delay_used,
       });
 
     } catch (error) {
@@ -292,22 +318,36 @@ function PredictPage() {
 
             <div className="space-y-2">
               <Label
-                htmlFor="weatherDelay"
+                htmlFor="airport"
                 className="text-xs uppercase tracking-luxe text-muted-foreground"
               >
-                Weather Delay (min)
+                Airport
               </Label>
-              <Input
-                id="weatherDelay"
-                type="number"
-                min={0}
-                max={1440}
-                placeholder="e.g. 0"
-                value={values.weatherDelay}
-                onChange={(e) => set("weatherDelay")(e.target.value)}
-              />
-              {errors.weatherDelay && (
-                <p className="text-xs text-destructive">{errors.weatherDelay}</p>
+
+              <Select
+                value={values.airport}
+                onValueChange={set("airport")}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Airport" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {AIRPORTS.map((airport) => (
+                    <SelectItem
+                      key={airport}
+                      value={airport}
+                    >
+                      {airport}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {errors.airport && (
+                <p className="text-xs text-destructive">
+                  {errors.airport}
+                </p>
               )}
             </div>
           </div>
@@ -333,8 +373,25 @@ function PredictPage() {
               {prediction.minutes}
               <span className="ml-2 text-lg text-muted-foreground">min</span>
             </p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Airport: <strong>{prediction.airport}</strong>
+            </p>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Weather: <strong>{prediction.weatherCondition}</strong>
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Weather Delay Score: <strong>{prediction.weatherDelay}</strong>
+            </p>
+
             <p className="mt-4 text-xs font-light text-muted-foreground">
-              Estimated departure delay based on your flight details.
+              Estimated departure delay based on live weather conditions.
+            </p>
+            <p className="mt-2 text-sm">
+              Airport: {prediction.airport}
+            </p>
+            <p className="text-sm">
+              Weather Impact: {prediction.weatherDelay} min
             </p>
           </div>
         )}
