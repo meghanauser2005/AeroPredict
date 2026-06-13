@@ -128,7 +128,24 @@ def predict(data: FlightInput):
         "WeatherDelay": weather_delay
     }])
 
-    prediction = model.predict(input_df)[0]
+    ml_prediction = int(model.predict(input_df)[0])
+
+    print("\n==========")
+    print(input_df)
+    print("ML Prediction:", ml_prediction)
+    print("Weather Delay:", weather_delay)
+    print("==========\n")
+
+    prediction = ml_prediction
+
+    if weather_delay >= 35:
+        prediction = 2
+
+    elif weather_delay >= 20:
+        prediction = max(prediction, 1)
+
+    print("Final Prediction:", prediction)
+    
 
     labels = {
         0: "On Time",
@@ -137,13 +154,55 @@ def predict(data: FlightInput):
     }
 
     if prediction == 0:
-        delay_minutes = 10
+        delay_minutes = weather_delay
 
     elif prediction == 1:
-        delay_minutes = 30
+        delay_minutes = 20 + weather_delay
 
     else:
-        delay_minutes = 60
+        delay_minutes = 60 + weather_delay
+    
+    reasons = []
+
+    if weather_delay >= 35:
+        reasons.append(
+            f"Severe weather ({weather_condition}) detected at airport"
+        )
+
+    elif weather_delay >= 20:
+        reasons.append(
+            f"Weather conditions ({weather_condition}) may impact operations"
+        )
+
+    if 6 <= data.CRSDepTime <= 10:
+        reasons.append(
+            "Morning airport traffic may cause congestion"
+        )
+
+    if 16 <= data.CRSDepTime <= 21:
+        reasons.append(
+            "Evening rush hour increases delay probability"
+        )
+
+    if data.Distance > 1500:
+        reasons.append(
+            "Long-haul flight routes are more delay-prone"
+        )
+
+    if not reasons:
+        reasons.append(
+            "Flight conditions appear normal"
+        )
+
+    if len(reasons) == 0:
+        reasons.append("Flight conditions appear normal")
+    
+    print("Input Features:")
+    print(input_df)
+    print("Prediction:", prediction)
+
+    print("Raw Prediction:", prediction)
+    print("Label:", labels[prediction])
 
     return {
         "prediction": int(prediction),
@@ -151,5 +210,32 @@ def predict(data: FlightInput):
         "delay_minutes": delay_minutes,
         "airport": data.Airport,
         "weather_delay_used": weather_delay,
-        "weather_condition": weather_condition
+        "weather_condition": weather_condition,
+        "explanation": reasons
+    }
+
+@app.post("/predict_test")
+def predict_test(
+    Month: int,
+    DayOfWeek: int,
+    AirlineCode: int,
+    CRSDepTime: int,
+    Distance: int,
+    WeatherDelay: int
+):
+
+    input_df = pd.DataFrame([{
+        "Month": Month,
+        "DayOfWeek": DayOfWeek,
+        "IATA_Code_Marketing_Airline": AirlineCode,
+        "CRSDepTime": CRSDepTime,
+        "Distance": Distance,
+        "WeatherDelay": WeatherDelay
+    }])
+
+    prediction = model.predict(input_df)[0]
+
+    return {
+        "prediction": int(prediction),
+        "probabilities": model.predict_proba(input_df)[0].tolist()
     }

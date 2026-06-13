@@ -1,5 +1,6 @@
 import pandas as pd
 import joblib
+import numpy as np
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -32,6 +33,11 @@ df['Delay_Category'] = target_encoder.fit_transform(
     df['Delay_Category']
 )
 
+print(dict(zip(
+    target_encoder.classes_,
+    target_encoder.transform(target_encoder.classes_)
+)))
+
 # Features
 
 X = df[
@@ -45,11 +51,15 @@ X = df[
 ]
 ]
 
-# Target
-
 y = df['Delay_Category']
 
-# Split
+from imblearn.over_sampling import SMOTE
+
+smote = SMOTE(random_state=42)
+
+X, y = smote.fit_resample(X, y)
+
+print(pd.Series(y).value_counts())
 
 X_train, X_test, y_train, y_test = train_test_split(
     X,
@@ -61,14 +71,20 @@ X_train, X_test, y_train, y_test = train_test_split(
 print("Training Random Forest...")
 
 rf = RandomForestClassifier(
-    n_estimators=30,
-    max_depth = 10,
+    n_estimators= 200,
+    max_depth = 20,
+    class_weight="balanced",
     random_state=42
 )
 
 rf.fit(X_train, y_train)
 
 pred = rf.predict(X_test)
+
+unique, counts = np.unique(pred, return_counts=True)
+
+print("\nPrediction Distribution:")
+print(dict(zip(unique, counts)))
 
 print("\nAccuracy:")
 

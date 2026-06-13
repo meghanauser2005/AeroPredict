@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plane, ArrowLeft, Timer } from "lucide-react";
 import { z } from "zod";
@@ -85,6 +85,7 @@ interface Prediction {
   airport: string;
   weatherCondition: string;
   weatherDelay: number;
+  explanation: string[];
 }
 
 const toneClasses: Record<Prediction["tone"], string> = {
@@ -105,6 +106,12 @@ function PredictPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if ("Notification" in window) {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const set = (key: keyof FormValues) => (value: string) => {
     setValues((v) => ({ ...v, [key]: value }));
@@ -146,7 +153,7 @@ function PredictPage() {
             Month: MONTHS.indexOf(values.month) + 1,
             DayOfWeek: DAYS.indexOf(values.dayOfWeek) + 1,
             Airline: values.airline,
-            CRSDepTime: Number(values.departureTime.split(":")[0]),
+            CRSDepTime: Number(values.departureTime.replace(":", "")),
             Distance: Number(values.distance),
             Airport: values.airport,
           }),
@@ -183,7 +190,32 @@ function PredictPage() {
         airport: data.airport,
         weatherCondition: data.weather_condition,
         weatherDelay: data.weather_delay_used,
+        explanation: data.explanation
       });
+      if (
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
+
+        let title = "AeroPredict";
+
+        let body = `${label} - Estimated delay ${data.delay_minutes} minutes`;
+
+        if (data.prediction === 2) {
+          title = "🚨 Major Flight Delay";
+          body = `Your flight is expected to be delayed by ${data.delay_minutes} minutes.`;
+        }
+
+        else if (data.prediction === 1) {
+          title = "⚠️ Flight Delay Alert";
+          body = `Your flight may be delayed by approximately ${data.delay_minutes} minutes.`;
+        }
+
+        new Notification(title, {
+          body,
+          icon: "/favicon.ico",
+        });
+      }
 
     } catch (error) {
       console.error(error);
@@ -373,16 +405,34 @@ function PredictPage() {
               {prediction.minutes}
               <span className="ml-2 text-lg text-muted-foreground">min</span>
             </p>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Airport: <strong>{prediction.airport}</strong>
-            </p>
+            <div className="mt-5 rounded-lg border border-border bg-muted/30 p-4">
+              <h3 className="font-semibold mb-3">
+                Live Airport Conditions
+              </h3>
 
-            <p className="mt-2 text-sm text-muted-foreground">
-              Weather: <strong>{prediction.weatherCondition}</strong>
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Weather Delay Score: <strong>{prediction.weatherDelay}</strong>
-            </p>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Airport:
+                  <strong className="ml-2">
+                    {prediction.airport}
+                  </strong>
+                </p>
+
+                <p>
+                  Weather:
+                  <strong className="ml-2">
+                    {prediction.weatherCondition}
+                  </strong>
+                </p>
+
+                <p>
+                  Weather Impact Score:
+                  <strong className="ml-2">
+                    {prediction.weatherDelay}
+                  </strong>
+                </p>
+              </div>
+            </div>
 
             <p className="mt-4 text-xs font-light text-muted-foreground">
               Estimated departure delay based on live weather conditions.
@@ -393,6 +443,13 @@ function PredictPage() {
             <p className="text-sm">
               Weather Impact: {prediction.weatherDelay} min
             </p>
+            {prediction.explanation && prediction.explanation.length > 0 && (
+              <div className="mt-6 text-center">
+                <p className="text-sm">
+                  <strong>Cause:</strong> {prediction.explanation.join(", ")}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </main>
